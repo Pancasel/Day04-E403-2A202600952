@@ -25,58 +25,30 @@ def normalize_content(raw: Any) -> str:
         return "\n".join(parts).strip()
     return str(raw).strip()
 
+
 def build_chat_model(
     *,
     provider: str = "google",
     model_name: str | None = None,
     temperature: float = 0.0,
 ):
-    actual_model = model_name or os.getenv("LLM_MODEL", "gemini-2.5-flash")
-    api_key = os.getenv("GOOGLE_API_KEY")
-
-    # TỰ ĐỘNG CHUYỂN HƯỚNG SANG OPENCODE AI NẾU DÙNG KEY DẠNG sk- HOẶC DÙNG DEEPSEEK
-    if provider == "google" and api_key and (api_key.startswith("sk-") or "deepseek" in actual_model.lower()):
-        from langchain_openai import ChatOpenAI
-        base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE") or "https://opencode.ai/zen/go/v1"
-        return ChatOpenAI(
-            model=actual_model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url,
-        )
-
     if provider == "google":
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         return ChatGoogleGenerativeAI(
-            model=actual_model,
+            model=model_name or os.getenv("LLM_MODEL", "gemini-2.5-flash"),
             temperature=temperature,
-            google_api_key=api_key,
+            google_api_key=os.getenv("GOOGLE_API_KEY"),
         )
+    if provider == "ollama":
+        from langchain_ollama import ChatOllama
 
-# def build_chat_model(
-#     *,
-#     provider: str = "google",
-#     model_name: str | None = None,
-#     temperature: float = 0.0,
-# ):
-#     if provider == "google":
-#         from langchain_google_genai import ChatGoogleGenerativeAI
-
-#         return ChatGoogleGenerativeAI(
-#             model=model_name or os.getenv("LLM_MODEL", "gemini-2.5-flash"),
-#             temperature=temperature,
-#             google_api_key=os.getenv("GOOGLE_API_KEY"),
-#         )
-#     if provider == "ollama":
-#         from langchain_ollama import ChatOllama
-
-#         return ChatOllama(
-#             model=model_name or os.getenv("OLLAMA_MODEL", "qwen3.5:3b"),
-#             base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
-#             temperature=temperature,
-#         )
-#     raise ValueError("This lab supports only the `google` and `ollama` providers.")
+        return ChatOllama(
+            model=model_name or os.getenv("OLLAMA_MODEL", "qwen3.5:3b"),
+            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            temperature=temperature,
+        )
+    raise ValueError("This lab supports only the `google` and `ollama` providers.")
 
 
 def extract_json_object(raw: Any) -> dict[str, Any]:
